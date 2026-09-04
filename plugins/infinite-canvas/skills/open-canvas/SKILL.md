@@ -22,7 +22,7 @@ npx -y @esncy/canvas-agent
 3. 从启动输出取得 `Local URL` 和 `Connect token`，在 Codex 右侧浏览器打开：
 
 ```text
-<Vite Local 地址>/canvas?mode=new&agentUrl=<Local URL>&agentToken=<Connect token>
+<Vite Local 地址>/canvas?mode=new#agentUrl=<Local URL>&agentToken=<Connect token>
 ```
 
 ## MCP 与连接地址
