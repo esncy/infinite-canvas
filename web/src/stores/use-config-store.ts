@@ -81,6 +81,8 @@ const DAGOUI_DEFAULT_MODEL_VALUES: Record<string, string> = {
     "dagouai::gpt-5.5": "dagouai::gpt-5.6-luna",
     "default::gpt-4o-mini-tts": "dagouai::gpt-4o-mini-tts",
 };
+const LEGACY_DEFAULT_CHANNEL_NAMES = new Set(["openai", "默认渠道", "default provider"]);
+const LEGACY_DEFAULT_MODEL_NAMES = new Set(["gpt-image-2", "grok-imagine-video", "gpt-5.5", "gpt-4o-mini-tts"]);
 
 export const defaultConfig: AiConfig = {
     channelMode: "local",
@@ -234,8 +236,10 @@ export const useConfigStore = create<ConfigStore>()(
                 const persistedConfig = (persistedState.config || {}) as Partial<AiConfig>;
                 const persistedWebdav = (persistedState.webdav || {}) as Partial<WebdavSyncConfig>;
                 const config = { ...defaultConfig, ...persistedConfig };
-                if (persistedState.config && !Array.isArray(persistedConfig.channels)) config.channels = [];
-                const channels = ensureDagouChannel(normalizeChannels(config));
+                const hasPersistedChannelList = Array.isArray(persistedConfig.channels);
+                if (persistedState.config && !hasPersistedChannelList) config.channels = legacyChannelsFromConfig(persistedConfig);
+                const channels = normalizeChannels(config, !persistedState.config || !hasPersistedChannelList);
+                const preserveLegacyDefault = channels.some((channel) => channel.id === "default");
                 const models = modelOptionsFromChannels(channels);
                 return {
                     ...current,
@@ -246,11 +250,11 @@ export const useConfigStore = create<ConfigStore>()(
                         apiFormat: normalizeApiFormat(config.apiFormat),
                         channels,
                         models,
-                        model: normalizeModelOptionValue(migrateDefaultModel(config.model), channels),
-                        imageModel: normalizeModelOptionValue(migrateDefaultModel(config.imageModel || config.model), channels),
-                        videoModel: normalizeModelOptionValue(migrateDefaultModel(config.videoModel), channels),
-                        textModel: normalizeModelOptionValue(migrateDefaultModel(config.textModel || config.model), channels),
-                        audioModel: normalizeModelOptionValue(migrateDefaultModel(config.audioModel || defaultConfig.audioModel), channels),
+                        model: normalizeModelOptionValue(migrateDefaultModel(config.model, preserveLegacyDefault), channels),
+                        imageModel: normalizeModelOptionValue(migrateDefaultModel(config.imageModel || config.model, preserveLegacyDefault), channels),
+                        videoModel: normalizeModelOptionValue(migrateDefaultModel(config.videoModel, preserveLegacyDefault), channels),
+                        textModel: normalizeModelOptionValue(migrateDefaultModel(config.textModel || config.model, preserveLegacyDefault), channels),
+                        audioModel: normalizeModelOptionValue(migrateDefaultModel(config.audioModel || defaultConfig.audioModel, preserveLegacyDefault), channels),
                         audioVoice: config.audioVoice || defaultConfig.audioVoice,
                         audioFormat: config.audioFormat || defaultConfig.audioFormat,
                         audioSpeed: config.audioSpeed || defaultConfig.audioSpeed,
@@ -359,11 +363,12 @@ export function resolveModelRequestConfig(config: AiConfig, value: string) {
     };
 }
 
-function normalizeChannels(config: AiConfig) {
+function normalizeChannels(config: AiConfig, seedDefault = true) {
     const persistedChannels = (Array.isArray(config.channels) ? config.channels : []).filter((channel) => {
         const id = channel.id?.trim();
         const name = channel.name?.trim().toLowerCase();
-        return id !== "default" && !(!id && ["openai", "默认渠道", "default provider"].includes(name || ""));
+        const legacyDefault = id === "default" || (!id && LEGACY_DEFAULT_CHANNEL_NAMES.has(name || ""));
+        return !legacyDefault || hasLegacyChannelConfiguration(channel);
     });
     const channels = persistedChannels.map((channel, index) =>
         (() => {
@@ -372,7 +377,7 @@ function normalizeChannels(config: AiConfig) {
             return createModelChannel({ ...channel, id, name, models: normalizeChannelModels(channel.models) });
         })(),
     );
-    if (!channels.length) {
+    if (!channels.length && seedDefault) {
         channels.push(
             createModelChannel({
                 id: DEFAULT_CHANNEL_ID,
@@ -387,16 +392,25 @@ function normalizeChannels(config: AiConfig) {
     return channels;
 }
 
-function ensureDagouChannel(channels: ModelChannel[]) {
-    if (channels.some((channel) => channel.id === DEFAULT_CHANNEL_ID)) return channels;
-    return [
-        ...channels,
-        createModelChannel({ id: DEFAULT_CHANNEL_ID, name: i18n.t("config.channels.dagouName"), baseUrl: DAGOUI_BASE_URL, apiFormat: "openai", models: DEFAULT_CHANNEL_MODELS }),
-    ];
+function legacyChannelsFromConfig(config: Partial<AiConfig>) {
+    const apiFormat = normalizeApiFormat(config.apiFormat);
+    const baseUrl = config.baseUrl?.trim() || OPENAI_BASE_URL;
+    const models = normalizeChannelModels([config.model, config.imageModel, config.videoModel, config.textModel, config.audioModel].filter((model): model is string => Boolean(model)));
+    const hasCustomModel = models.some((model) => !LEGACY_DEFAULT_MODEL_NAMES.has(model.name));
+    if (!config.apiKey?.trim() && baseUrl === OPENAI_BASE_URL && apiFormat === "openai" && !hasCustomModel) return [];
+    return [createModelChannel({ id: "default", name: "OpenAI", baseUrl, apiKey: config.apiKey || "", apiFormat, models })];
 }
 
-function migrateDefaultModel(value: string | undefined) {
+function hasLegacyChannelConfiguration(channel: Partial<ModelChannel>) {
+    const baseUrl = channel.baseUrl?.trim().replace(/\/+$/, "").toLowerCase() || "";
+    const models = normalizeChannelModels(channel.models);
+    const isDefaultModels = models.length === 0 || models.every((model) => LEGACY_DEFAULT_MODEL_NAMES.has(model.name));
+    return Boolean(channel.apiKey?.trim() || (baseUrl && baseUrl !== OPENAI_BASE_URL) || channel.apiFormat === "gemini" || !isDefaultModels);
+}
+
+function migrateDefaultModel(value: string | undefined, preserveLegacyDefault = false) {
     const normalized = (value || "").trim();
+    if (preserveLegacyDefault) return normalized;
     return DAGOUI_DEFAULT_MODEL_VALUES[normalized] || normalized;
 }
 
