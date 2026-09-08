@@ -1,11 +1,11 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import { ImageIcon, List, Music2, Settings2, Video, X } from "lucide-react";
 import { useTranslation } from "react-i18next";
 
 import { canvasThemes } from "@/lib/canvas-theme";
 import { useThemeStore } from "@/stores/use-theme-store";
 import { listNodeDefinitions, useNodeRegistryVersion } from "@/lib/canvas/node-registry";
-import { CanvasNodeType, type ConnectionHandle, type Position } from "@/types/canvas";
+import { CanvasNodeType, type ConnectionHandle, type Position, type ViewportTransform } from "@/types/canvas";
 
 export type PendingConnectionCreate = {
     connections: ConnectionHandle[];
@@ -14,20 +14,44 @@ export type PendingConnectionCreate = {
 
 export function ConnectionCreateMenu({
     pending,
+    viewport,
+    canvasSize,
     onCreate,
     onClose,
 }: {
     pending: PendingConnectionCreate;
+    viewport: ViewportTransform;
+    canvasSize: { width: number; height: number };
     onCreate: (type: CanvasNodeType.Image | CanvasNodeType.Text | CanvasNodeType.Config | CanvasNodeType.Video | CanvasNodeType.Audio) => void;
     onClose: () => void;
 }) {
     const theme = canvasThemes[useThemeStore((state) => state.theme)];
     const { t } = useTranslation();
+    const menuRef = useRef<HTMLDivElement>(null);
+    const [menuPosition, setMenuPosition] = useState<Position | null>(null);
+    const anchor = {
+        x: viewport.x + pending.position.x * viewport.k,
+        y: viewport.y + pending.position.y * viewport.k,
+    };
+
+    useLayoutEffect(() => {
+        const rect = menuRef.current?.getBoundingClientRect();
+        if (!rect) return;
+        const parentRect = menuRef.current?.offsetParent?.getBoundingClientRect();
+        const margin = 12;
+        const availableWidth = parentRect?.width || canvasSize.width;
+        const availableHeight = parentRect?.height || canvasSize.height;
+        const maxLeft = Math.max(margin, availableWidth - rect.width - margin);
+        const maxTop = Math.max(margin, availableHeight - rect.height - margin);
+        setMenuPosition({ x: Math.min(Math.max(anchor.x, margin), maxLeft), y: Math.min(Math.max(anchor.y, margin), maxTop) });
+    }, [anchor.x, anchor.y, canvasSize.height, canvasSize.width]);
+
     return (
         <div
+            ref={menuRef}
             className="absolute z-[120] w-[300px] rounded-[18px] border p-3 shadow-2xl backdrop-blur"
             data-connection-create-menu
-            style={{ left: pending.position.x, top: pending.position.y, background: theme.node.panel, borderColor: theme.node.stroke, color: theme.node.text }}
+            style={{ left: menuPosition?.x ?? anchor.x, top: menuPosition?.y ?? anchor.y, visibility: menuPosition ? "visible" : "hidden", background: theme.node.panel, borderColor: theme.node.stroke, color: theme.node.text }}
             onMouseDown={(event) => event.stopPropagation()}
             onPointerDown={(event) => event.stopPropagation()}
         >

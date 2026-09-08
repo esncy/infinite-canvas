@@ -1648,7 +1648,13 @@ function InfiniteCanvasPage() {
             event.stopPropagation();
             setMouseWorld(screenToCanvas(event.clientX, event.clientY));
             connectionDragRef.current = { startX: event.clientX, startY: event.clientY, moved: false };
-            setConnecting({ nodeId, handleType, nodeIds });
+            const selectedIds = selectedNodeIdsRef.current;
+            const batchNodeIds = nodeIds?.length
+                ? nodeIds
+                : selectedIds.size > 1 && selectedIds.has(nodeId)
+                  ? nodesRef.current.filter((node) => selectedIds.has(node.id) && node.type !== CanvasNodeType.Group && (handleType === "target" || (node.type !== CanvasNodeType.Config && (getNodeDefinition(node.type)?.hasSourceHandle ?? true)))).map((node) => node.id)
+                  : [nodeId];
+            setConnecting({ nodeId: batchNodeIds[0] || nodeId, handleType, nodeIds: batchNodeIds.length > 1 ? batchNodeIds : undefined });
             connectionTargetNodeIdRef.current = null;
             setConnectionTargetNodeId(null);
             setSelectedConnectionId(null);
@@ -3243,7 +3249,6 @@ function InfiniteCanvasPage() {
                     ) : null}
                     {hasMultipleSelectedNodes && !selectionBox && selectedTargetConnectionNodes.length > 1 ? <CanvasSelectionConnectionRail nodes={selectedTargetConnectionNodes} handleType="target" onConnectStart={(event, handleType, nodeIds) => handleConnectStart(event, nodeIds[0], handleType, nodeIds)} /> : null}
                     {hasMultipleSelectedNodes && !selectionBox && selectedSourceConnectionNodes.length > 1 ? <CanvasSelectionConnectionRail nodes={selectedSourceConnectionNodes} handleType="source" onConnectStart={(event, handleType, nodeIds) => handleConnectStart(event, nodeIds[0], handleType, nodeIds)} /> : null}
-                    {pendingConnectionCreate ? <ConnectionCreateMenu pending={pendingConnectionCreate} onCreate={(type) => createConnectedNode(type, pendingConnectionCreate)} onClose={cancelPendingConnectionCreate} /> : null}
                     {nodeCreatePosition ? (
                         <NodeCreateMenu
                             position={nodeCreatePosition}
@@ -3255,6 +3260,8 @@ function InfiniteCanvasPage() {
                         />
                     ) : null}
                 </InfiniteCanvas>
+
+                {pendingConnectionCreate ? <ConnectionCreateMenu pending={pendingConnectionCreate} viewport={viewport} canvasSize={size} onCreate={(type) => createConnectedNode(type, pendingConnectionCreate)} onClose={cancelPendingConnectionCreate} /> : null}
 
                 <CanvasNodeHoverToolbar
                     node={isNodeDragging || isNodeResizing || nodeImageSettingsOpen || expandedBatchNodeIds.has(toolbarNode?.id || "") ? null : toolbarNode}

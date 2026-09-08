@@ -29,7 +29,7 @@ export function CanvasSelectionConnectionRail({ nodes, handleType, onConnectStar
             data-canvas-no-zoom
             aria-label={label}
             className={`canvas-connection-rail canvas-connection-rail-${side} group pointer-events-auto absolute z-[75] flex -translate-y-1/2 items-center justify-center touch-none cursor-crosshair rounded-full outline-none transition-opacity duration-150`}
-            style={{ top: bounds.top + (bounds.bottom - bounds.top) / 2, height: railHeight, width: 80, opacity: 1 }}
+            style={{ left: handleType === "source" ? bounds.right : bounds.left - 80, top: bounds.top + (bounds.bottom - bounds.top) / 2, height: railHeight, width: 80, opacity: 1 }}
             onMouseDown={(event) => {
                 event.stopPropagation();
                 onConnectStart(event, handleType, nodeIds);
