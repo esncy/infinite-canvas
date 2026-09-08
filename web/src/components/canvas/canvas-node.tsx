@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { ReactNode } from "react";
-import { ChevronRight, Copy, Download, Group, Image as ImageIcon, Music2, Puzzle, RefreshCw, Star, Trash2, Video } from "lucide-react";
+import { ChevronRight, Copy, Download, Group, Image as ImageIcon, Music2, Plus, Puzzle, RefreshCw, Star, Trash2, Video } from "lucide-react";
 
 import { canvasThemes } from "@/lib/canvas-theme";
 import { formatBytes } from "@/lib/image-utils";
@@ -39,7 +39,7 @@ type CanvasNodeProps = {
     onSelectCapture?: (event: React.MouseEvent, nodeId: string) => void;
     onHoverStart: (nodeId: string) => void;
     onHoverEnd: (nodeId: string) => void;
-    onConnectStart: (event: React.MouseEvent, nodeId: string, handleType: "source" | "target") => void;
+    onConnectStart: (event: React.MouseEvent, nodeId: string, handleType: "source" | "target", nodeIds?: string[]) => void;
     onResizeStart: (nodeId: string) => void;
     onResize: (nodeId: string, width: number, height: number, position?: Position) => void;
     onResizeEnd: (nodeId: string) => void;
@@ -439,8 +439,8 @@ export const CanvasNode = React.memo(function CanvasNode({
                 {!referenceSelectionState ? <ResizeHandle corner="bottom-right" onMouseDown={handleResizeMouseDown} /> : null}
             </div>
 
-            {!referenceSelectionState && !isGroup ? <ConnectionHandleDot side="left" visible={hovered || isSelected || isConnecting} onMouseDown={(event) => onConnectStart(event, data.id, "target")} /> : null}
-            {!referenceSelectionState && (definition?.hasSourceHandle ?? true) && data.type !== CanvasNodeType.Config ? <ConnectionHandleDot side="right" visible={hovered || isSelected || isConnecting} onMouseDown={(event) => onConnectStart(event, data.id, "source")} /> : null}
+            {!referenceSelectionState && !isGroup ? <ConnectionHandleRail side="left" visible={hovered || isSelected || isConnecting} label={t("canvas.connection.input")} onMouseDown={(event) => onConnectStart(event, data.id, "target")} /> : null}
+            {!referenceSelectionState && (definition?.hasSourceHandle ?? true) && data.type !== CanvasNodeType.Config ? <ConnectionHandleRail side="right" visible={hovered || isSelected || isConnecting} label={t("canvas.connection.output")} onMouseDown={(event) => onConnectStart(event, data.id, "source")} /> : null}
 
             {showPanel && !isGroup && renderPanel ? <div className="absolute left-1/2 top-full z-[70] w-[600px] -translate-x-1/2 pt-4">{renderPanel(data)}</div> : null}
         </div>
@@ -944,17 +944,28 @@ function ResizeHandle({ corner, onMouseDown }: { corner: ResizeCorner; onMouseDo
     return <div className={`absolute z-50 size-7 ${positionClass}`} onMouseDown={(event) => onMouseDown(event, corner)} />;
 }
 
-function ConnectionHandleDot({ side, visible, onMouseDown }: { side: "left" | "right"; visible: boolean; onMouseDown: (event: React.MouseEvent) => void }) {
+function ConnectionHandleRail({ side, visible, label, onMouseDown }: { side: "left" | "right"; visible: boolean; label: string; onMouseDown: (event: React.MouseEvent) => void }) {
     const theme = canvasThemes[useThemeStore((state) => state.theme)];
 
     return (
-        <div
-            className={`absolute top-1/2 z-30 flex size-12 -translate-y-1/2 cursor-crosshair items-center justify-center transition-opacity duration-150 ${
-                side === "left" ? "-left-6" : "-right-6"
-            } ${visible ? "pointer-events-auto opacity-100" : "pointer-events-none opacity-0"}`}
-            onMouseDown={onMouseDown}
+        <button
+            type="button"
+            aria-label={label}
+            data-canvas-no-zoom
+            className={`canvas-connection-rail canvas-connection-rail-${side} group pointer-events-auto absolute top-1/2 z-30 flex -translate-y-1/2 items-center justify-center touch-none cursor-crosshair rounded-full outline-none transition-opacity duration-150 ${
+                side === "left" ? "right-full" : "left-full"
+            } ${visible ? "opacity-100" : "pointer-events-none opacity-0"}`}
+            style={{ width: 80, height: "min(100%, 80px)", opacity: visible ? undefined : 0 }}
+            onMouseDown={(event) => {
+                event.stopPropagation();
+                onMouseDown(event);
+            }}
         >
-            <div className="size-3 rounded-full border-2 transition-all hover:scale-125" style={{ background: theme.node.panel, borderColor: theme.node.muted }} />
-        </div>
+            <span className={`canvas-connection-rail-plus canvas-connection-rail-plus-${side} absolute left-1/2 top-1/2 block`}>
+                <span className="grid size-5 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full border bg-white text-[#111827] shadow-sm" style={{ borderColor: theme.node.muted }}>
+                    <Plus aria-hidden="true" className="size-3.5" strokeWidth={2.25} />
+                </span>
+            </span>
+        </button>
     );
 }

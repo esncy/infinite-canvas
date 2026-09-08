@@ -8,7 +8,7 @@ import { listNodeDefinitions, useNodeRegistryVersion } from "@/lib/canvas/node-r
 import { CanvasNodeType, type ConnectionHandle, type Position } from "@/types/canvas";
 
 export type PendingConnectionCreate = {
-    connection: ConnectionHandle;
+    connections: ConnectionHandle[];
     position: Position;
 };
 
@@ -33,7 +33,7 @@ export function ConnectionCreateMenu({
         >
             <div className="mb-2 flex items-center justify-between px-1">
                 <span className="text-sm font-medium" style={{ color: theme.node.muted }}>
-                    {t("canvas.createMenu.fromNode")}
+                    {t(pending.connections.length > 1 ? "canvas.createMenu.fromSelectedNodes" : "canvas.createMenu.fromNode")}
                 </span>
                 <button type="button" className="grid size-7 place-items-center rounded-lg text-base opacity-55 transition hover:bg-white/10 hover:opacity-100" onClick={onClose} aria-label={t("canvas.createMenu.close")}>
                     ×

@@ -252,8 +252,9 @@ export default {
         },
         export: { defaultProjectName: "大狗AI画布", defaultNodesName: "画布元素", item: "元素" },
         createMenu: {
-            fromNode: "引用该节点生成", close: "关闭", text: "文本生成", textDescription: "脚本、广告词、品牌文案", image: "图片生成", video: "视频生成", audio: "音频参考", config: "配置节点", configDescription: "模型、尺寸、数量和输入顺序", select: "选择节点",
+            fromNode: "引用该节点生成", fromSelectedNodes: "引用选中节点生成", close: "关闭", text: "文本生成", textDescription: "脚本、广告词、品牌文案", image: "图片生成", video: "视频生成", audio: "音频参考", config: "配置节点", configDescription: "模型、尺寸、数量和输入顺序", select: "选择节点",
         },
+        connection: { input: "输入连接点，单击创建节点或拖动连线", output: "输出连接点，单击创建节点或拖动连线", selectedInput: "从新节点连接到选中节点", selectedOutput: "从选中节点连接到新节点" },
         node: {
             node: "节点",
             untitled: "未命名节点", renameHint: "双击修改节点名称", group: "组", nodeCount: "{{count}} 个节点", generating: "生成中", failed: "生成失败", retry: "重试", missingPlugin: "缺少插件", missingPluginDescription: "节点类型“{{type}}”的插件未安装或未启用", generateImage: "用文本生图", generate: "生图", editText: "双击编辑文字", emptyImage: "空图片节点", emptyVideo: "空视频节点", emptyAudio: "空音频节点", audio: "音频", batchExpanded: "图片组已展开", batchCollapsed: "图片组已收起", textBatchExpanded: "备选文本已展开", textBatchCollapsed: "备选文本已收起", createCopy: "创建副本", setPrimary: "设为主图", setPrimaryText: "设为主文本",

@@ -63,6 +63,23 @@ export function ActiveConnectionPath({ node, handle, mouseWorld, target }: { nod
     const theme = canvasThemes[useThemeStore((state) => state.theme)];
     if (!node) return null;
 
+    const pathD = getActiveConnectionPath(node, handle, mouseWorld, target);
+
+    return <path d={pathD} stroke={theme.node.activeStroke} strokeWidth="2" fill="none" strokeDasharray="5,5" />;
+}
+
+export function ActiveBatchConnectionPath({ nodes, handle, mouseWorld, target }: { nodes: CanvasNodeData[]; handle: ConnectionHandle; mouseWorld: Position; target?: CanvasNodeData }) {
+    const theme = canvasThemes[useThemeStore((state) => state.theme)];
+    return (
+        <>
+            {nodes.map((node) => (
+                <path key={node.id} d={getActiveConnectionPath(node, handle, mouseWorld, target)} stroke={theme.node.activeStroke} strokeWidth="2" fill="none" strokeDasharray="5,5" />
+            ))}
+        </>
+    );
+}
+
+function getActiveConnectionPath(node: CanvasNodeData, handle: ConnectionHandle, mouseWorld: Position, target?: CanvasNodeData) {
     const startX = handle.handleType === "source" ? node.position.x + node.width : mouseWorld.x;
     const startY = handle.handleType === "source" ? node.position.y + node.height / 2 : mouseWorld.y;
     const endX = handle.handleType === "source" ? mouseWorld.x : node.position.x;
@@ -72,7 +89,5 @@ export function ActiveConnectionPath({ node, handle, mouseWorld, target }: { nod
     const snappedEndX = handle.handleType === "source" && target ? target.position.x : endX;
     const snappedEndY = handle.handleType === "source" && target ? target.position.y + target.height / 2 : endY;
     const distance = Math.abs(snappedEndX - snappedStartX);
-    const pathD = `M ${snappedStartX} ${snappedStartY} C ${snappedStartX + distance * 0.5} ${snappedStartY}, ${snappedEndX - distance * 0.5} ${snappedEndY}, ${snappedEndX} ${snappedEndY}`;
-
-    return <path d={pathD} stroke={theme.node.activeStroke} strokeWidth="2" fill="none" strokeDasharray="5,5" />;
+    return `M ${snappedStartX} ${snappedStartY} C ${snappedStartX + distance * 0.5} ${snappedStartY}, ${snappedEndX - distance * 0.5} ${snappedEndY}, ${snappedEndX} ${snappedEndY}`;
 }

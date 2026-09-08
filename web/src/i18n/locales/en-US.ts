@@ -252,8 +252,9 @@ export default {
         },
         export: { defaultProjectName: "Dagou Canvas", defaultNodesName: "Canvas elements", item: "Element" },
         createMenu: {
-            fromNode: "Generate from this node", close: "Close", text: "Generate text", textDescription: "Scripts, ad copy, and brand content", image: "Generate image", video: "Generate video", audio: "Audio reference", config: "Configuration node", configDescription: "Model, size, count, and input order", select: "Select a node",
+            fromNode: "Generate from this node", fromSelectedNodes: "Generate from selected nodes", close: "Close", text: "Generate text", textDescription: "Scripts, ad copy, and brand content", image: "Generate image", video: "Generate video", audio: "Audio reference", config: "Configuration node", configDescription: "Model, size, count, and input order", select: "Select a node",
         },
+        connection: { input: "Input connection point: click to create a node or drag to connect", output: "Output connection point: click to create a node or drag to connect", selectedInput: "Connect a new node to the selected nodes", selectedOutput: "Connect the selected nodes to a new node" },
         node: {
             node: "Node",
             untitled: "Untitled node", renameHint: "Double-click to rename the node", group: "Group", nodeCount: "{{count}} nodes", generating: "Generating", failed: "Generation failed", retry: "Retry", missingPlugin: "Plugin missing", missingPluginDescription: "The plugin for node type “{{type}}” is not installed or enabled", generateImage: "Generate image from text", generate: "Generate", editText: "Double-click to edit text", emptyImage: "Empty image node", emptyVideo: "Empty video node", emptyAudio: "Empty audio node", audio: "Audio", batchExpanded: "Image group expanded", batchCollapsed: "Image group collapsed", textBatchExpanded: "Text alternatives expanded", textBatchCollapsed: "Text alternatives collapsed", createCopy: "Create copy", setPrimary: "Set as primary", setPrimaryText: "Set as primary",
