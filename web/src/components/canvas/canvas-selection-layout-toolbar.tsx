@@ -48,6 +48,7 @@ export function CanvasSelectionLayoutToolbar({
     const { t } = useTranslation();
     const theme = canvasThemes[useThemeStore((state) => state.theme)];
     const bounds = useCanvasSelectionScreenBounds(nodes, viewport);
+    const tooltipStyles = { color: theme.node.panel, boxShadow: "0 8px 24px rgba(15,23,42,.16)", fontSize: 13, fontWeight: 500 };
     if (nodes.length < 2) return null;
 
     const left = (bounds.left + bounds.right) / 2;
@@ -65,7 +66,7 @@ export function CanvasSelectionLayoutToolbar({
                     const isDisabled = disabled?.(nodes) || false;
                     const title = t(`canvas.selectionLayout.${label}`);
                     return (
-                        <Tooltip key={action} title={title} placement="top" mouseEnterDelay={0.15}>
+                        <Tooltip key={action} title={title} placement="top" mouseEnterDelay={0.15} color={theme.node.text} styles={{ root: tooltipStyles }}>
                             <button
                                 type="button"
                                 aria-label={title}

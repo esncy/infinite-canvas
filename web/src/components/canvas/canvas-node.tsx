@@ -24,6 +24,7 @@ type CanvasNodeProps = {
     isFocusRelated: boolean;
     isConnectionTarget: boolean;
     isConnecting: boolean;
+    isMultiSelected?: boolean;
     referenceSelectionState?: "target" | "disabled" | "available";
     showPanel: boolean;
     showImageInfo: boolean;
@@ -89,6 +90,7 @@ export const CanvasNode = React.memo(function CanvasNode({
     isFocusRelated,
     isConnectionTarget,
     isConnecting,
+    isMultiSelected = false,
     referenceSelectionState,
     showPanel,
     showImageInfo,
@@ -439,8 +441,8 @@ export const CanvasNode = React.memo(function CanvasNode({
                 {!referenceSelectionState ? <ResizeHandle corner="bottom-right" onMouseDown={handleResizeMouseDown} /> : null}
             </div>
 
-            {!referenceSelectionState && !isGroup ? <ConnectionHandleRail side="left" visible={hovered || isSelected || isConnecting} label={t("canvas.connection.input")} onMouseDown={(event) => onConnectStart(event, data.id, "target")} /> : null}
-            {!referenceSelectionState && (definition?.hasSourceHandle ?? true) && data.type !== CanvasNodeType.Config ? <ConnectionHandleRail side="right" visible={hovered || isSelected || isConnecting} label={t("canvas.connection.output")} onMouseDown={(event) => onConnectStart(event, data.id, "source")} /> : null}
+            {!isMultiSelected && !referenceSelectionState && !isGroup ? <ConnectionHandleRail side="left" visible={hovered || isSelected || isConnecting} label={t("canvas.connection.input")} onMouseDown={(event) => onConnectStart(event, data.id, "target")} /> : null}
+            {!isMultiSelected && !referenceSelectionState && (definition?.hasSourceHandle ?? true) && data.type !== CanvasNodeType.Config ? <ConnectionHandleRail side="right" visible={hovered || isSelected || isConnecting} label={t("canvas.connection.output")} onMouseDown={(event) => onConnectStart(event, data.id, "source")} /> : null}
 
             {showPanel && !isGroup && renderPanel ? <div className="absolute left-1/2 top-full z-[70] w-[600px] -translate-x-1/2 pt-4">{renderPanel(data)}</div> : null}
         </div>
