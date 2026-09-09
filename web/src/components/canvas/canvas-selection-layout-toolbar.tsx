@@ -10,8 +10,6 @@ import {
     AlignVerticalSpaceAround,
     AlignVerticalSpaceBetween,
     Grid3X3,
-    Group,
-    Ungroup,
     Workflow,
 } from "lucide-react";
 import { Tooltip } from "antd";
@@ -41,18 +39,10 @@ const ACTIONS: Array<{ action: CanvasSelectionLayoutAction; icon: typeof AlignHo
 export function CanvasSelectionLayoutToolbar({
     nodes,
     viewport,
-    canGroup,
-    canUngroup,
-    onGroup,
-    onUngroup,
     onLayout,
 }: {
     nodes: CanvasNodeData[];
     viewport: ViewportTransform;
-    canGroup: boolean;
-    canUngroup: boolean;
-    onGroup: () => void;
-    onUngroup: () => void;
     onLayout: (action: CanvasSelectionLayoutAction) => void;
 }) {
     const { t } = useTranslation();
@@ -88,20 +78,7 @@ export function CanvasSelectionLayoutToolbar({
                         </Tooltip>
                     );
                 })}
-                {canGroup || canUngroup ? <span className="mx-1 h-5 w-px" style={{ background: theme.toolbar.border }} /> : null}
-                {canGroup ? <LayoutAction label={t("canvas.nodeToolbar.group")} title={t("canvas.nodeToolbar.groupTitle")} icon={<Group className="size-4" />} onClick={onGroup} /> : null}
-                {canUngroup ? <LayoutAction label={t("canvas.nodeToolbar.ungroup")} title={t("canvas.nodeToolbar.ungroupTitle")} icon={<Ungroup className="size-4" />} onClick={onUngroup} /> : null}
             </div>
         </div>
-    );
-}
-
-function LayoutAction({ label, title, icon, onClick }: { label: string; title: string; icon: React.ReactNode; onClick: () => void }) {
-    return (
-        <Tooltip title={title} placement="top" mouseEnterDelay={0.15}>
-            <button type="button" aria-label={label} title={title} className="grid size-8 place-items-center rounded-lg transition hover:bg-black/5 dark:hover:bg-white/10" onClick={onClick}>
-                {icon}
-            </button>
-        </Tooltip>
     );
 }
