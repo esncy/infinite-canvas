@@ -1,5 +1,19 @@
 import { CanvasNodeType, type CanvasConnection, type CanvasNodeData, type ConnectionHandle } from "@/types/canvas";
 
+export type CanvasSelectionLayoutAction =
+    | "align-left"
+    | "align-center-horizontal"
+    | "align-right"
+    | "align-top"
+    | "align-center-vertical"
+    | "align-bottom"
+    | "distribute-horizontal"
+    | "distribute-vertical"
+    | "arrange-horizontal"
+    | "arrange-vertical"
+    | "arrange-grid"
+    | "organize-connections";
+
 export function nodeBounds(nodes: CanvasNodeData[]) {
     return nodes.reduce(
         (acc, node) => ({
@@ -11,6 +25,123 @@ export function nodeBounds(nodes: CanvasNodeData[]) {
         { left: Infinity, top: Infinity, right: -Infinity, bottom: -Infinity },
     );
 }
+
+export function layoutSelectedNodes(action: CanvasSelectionLayoutAction, selectedIds: Set<string>, nodes: CanvasNodeData[], connections: CanvasConnection[]) {
+    const selected = nodes.filter((node) => selectedIds.has(node.id));
+    if (selected.length < 2) return nodes;
+
+    const bounds = nodeBounds(selected);
+    const update = new Map<string, PositionPatch>();
+    const patch = (node: CanvasNodeData, position: PositionPatch) => update.set(node.id, position);
+
+    if (action === "align-left") selected.forEach((node) => patch(node, { x: bounds.left }));
+    if (action === "align-center-horizontal") selected.forEach((node) => patch(node, { x: (bounds.left + bounds.right - node.width) / 2 }));
+    if (action === "align-right") selected.forEach((node) => patch(node, { x: bounds.right - node.width }));
+    if (action === "align-top") selected.forEach((node) => patch(node, { y: bounds.top }));
+    if (action === "align-center-vertical") selected.forEach((node) => patch(node, { y: (bounds.top + bounds.bottom - node.height) / 2 }));
+    if (action === "align-bottom") selected.forEach((node) => patch(node, { y: bounds.bottom - node.height }));
+
+    if (action === "distribute-horizontal" && selected.length >= 3) {
+        const ordered = [...selected].sort((a, b) => a.position.x - b.position.x || a.position.y - b.position.y);
+        const totalWidth = ordered.reduce((sum, node) => sum + node.width, 0);
+        const gap = (bounds.right - bounds.left - totalWidth) / (ordered.length - 1);
+        let cursor = bounds.left;
+        ordered.forEach((node) => {
+            patch(node, { x: cursor });
+            cursor += node.width + gap;
+        });
+    }
+
+    if (action === "distribute-vertical" && selected.length >= 3) {
+        const ordered = [...selected].sort((a, b) => a.position.y - b.position.y || a.position.x - b.position.x);
+        const totalHeight = ordered.reduce((sum, node) => sum + node.height, 0);
+        const gap = (bounds.bottom - bounds.top - totalHeight) / (ordered.length - 1);
+        let cursor = bounds.top;
+        ordered.forEach((node) => {
+            patch(node, { y: cursor });
+            cursor += node.height + gap;
+        });
+    }
+
+    if (action === "arrange-horizontal") {
+        const ordered = [...selected].sort((a, b) => a.position.x - b.position.x || a.position.y - b.position.y);
+        const gap = 40;
+        let cursor = bounds.left;
+        const center = (bounds.top + bounds.bottom) / 2;
+        ordered.forEach((node) => {
+            patch(node, { x: cursor, y: center - node.height / 2 });
+            cursor += node.width + gap;
+        });
+    }
+
+    if (action === "arrange-vertical") {
+        const ordered = [...selected].sort((a, b) => a.position.y - b.position.y || a.position.x - b.position.x);
+        const gap = 40;
+        let cursor = bounds.top;
+        const center = (bounds.left + bounds.right) / 2;
+        ordered.forEach((node) => {
+            patch(node, { x: center - node.width / 2, y: cursor });
+            cursor += node.height + gap;
+        });
+    }
+
+    if (action === "arrange-grid") {
+        const ordered = [...selected].sort((a, b) => a.position.y - b.position.y || a.position.x - b.position.x);
+        const columns = Math.ceil(Math.sqrt(ordered.length));
+        const cellWidth = Math.max(...ordered.map((node) => node.width));
+        const cellHeight = Math.max(...ordered.map((node) => node.height));
+        const gap = 40;
+        ordered.forEach((node, index) => {
+            const column = index % columns;
+            const row = Math.floor(index / columns);
+            patch(node, { x: bounds.left + column * (cellWidth + gap) + (cellWidth - node.width) / 2, y: bounds.top + row * (cellHeight + gap) + (cellHeight - node.height) / 2 });
+        });
+    }
+
+    if (action === "organize-connections") {
+        const selectedById = new Map(selected.map((node) => [node.id, node]));
+        const incoming = new Map(selected.map((node) => [node.id, 0]));
+        const outgoing = new Map<string, string[]>();
+        connections.forEach((connection) => {
+            if (!selectedById.has(connection.fromNodeId) || !selectedById.has(connection.toNodeId)) return;
+            incoming.set(connection.toNodeId, (incoming.get(connection.toNodeId) || 0) + 1);
+            outgoing.set(connection.fromNodeId, [...(outgoing.get(connection.fromNodeId) || []), connection.toNodeId]);
+        });
+        const layers = new Map<string, number>();
+        const queue = selected.filter((node) => (incoming.get(node.id) || 0) === 0).map((node) => node.id);
+        queue.forEach((id) => layers.set(id, 0));
+        for (let index = 0; index < queue.length; index += 1) {
+            const fromId = queue[index];
+            (outgoing.get(fromId) || []).forEach((toId) => {
+                const nextLayer = Math.max(layers.get(toId) || 0, (layers.get(fromId) || 0) + 1);
+                layers.set(toId, nextLayer);
+                if (!queue.includes(toId)) queue.push(toId);
+            });
+        }
+        selected.forEach((node) => {
+            if (!layers.has(node.id)) layers.set(node.id, 0);
+        });
+        const columns = new Map<number, CanvasNodeData[]>();
+        selected.forEach((node) => columns.set(layers.get(node.id) || 0, [...(columns.get(layers.get(node.id) || 0) || []), node]));
+        const columnGap = 180;
+        const rowGap = 40;
+        [...columns.entries()].forEach(([column, columnNodes]) => {
+            let cursor = bounds.top;
+            columnNodes.sort((a, b) => a.position.y - b.position.y || a.position.x - b.position.x).forEach((node) => {
+                patch(node, { x: bounds.left + column * (Math.max(...selected.map((item) => item.width)) + columnGap), y: cursor });
+                cursor += node.height + rowGap;
+            });
+        });
+    }
+
+    if (!update.size) return nodes;
+    return nodes.map((node) => {
+        const next = update.get(node.id);
+        return next ? { ...node, position: { ...node.position, ...next } } : node;
+    });
+}
+
+type PositionPatch = Partial<CanvasNodeData["position"]>;
 
 export function findGroupDropTarget(movedIds: Set<string>, nodes: CanvasNodeData[]) {
     if (nodes.some((node) => movedIds.has(node.id) && node.type === CanvasNodeType.Group)) return null;

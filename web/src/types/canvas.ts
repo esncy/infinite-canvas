@@ -140,7 +140,6 @@ export type CanvasAssistantSession = {
 export type ConnectionHandle = {
     nodeId: string;
     handleType: "source" | "target";
-    nodeIds?: string[];
 };
 
 export type SelectionBox = {

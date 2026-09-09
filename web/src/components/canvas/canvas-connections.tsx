@@ -68,17 +68,6 @@ export function ActiveConnectionPath({ node, handle, mouseWorld, target }: { nod
     return <path d={pathD} stroke={theme.node.activeStroke} strokeWidth="2" fill="none" strokeDasharray="5,5" />;
 }
 
-export function ActiveBatchConnectionPath({ nodes, handle, mouseWorld, target }: { nodes: CanvasNodeData[]; handle: ConnectionHandle; mouseWorld: Position; target?: CanvasNodeData }) {
-    const theme = canvasThemes[useThemeStore((state) => state.theme)];
-    return (
-        <>
-            {nodes.map((node) => (
-                <path key={node.id} d={getActiveConnectionPath(node, handle, mouseWorld, target)} stroke={theme.node.activeStroke} strokeWidth="2" fill="none" strokeDasharray="5,5" />
-            ))}
-        </>
-    );
-}
-
 function getActiveConnectionPath(node: CanvasNodeData, handle: ConnectionHandle, mouseWorld: Position, target?: CanvasNodeData) {
     const startX = handle.handleType === "source" ? node.position.x + node.width : mouseWorld.x;
     const startY = handle.handleType === "source" ? node.position.y + node.height / 2 : mouseWorld.y;
