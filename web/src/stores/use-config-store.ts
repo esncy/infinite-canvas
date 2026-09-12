@@ -76,7 +76,7 @@ const CHANNEL_MODEL_SEPARATOR = "::";
 const OPENAI_BASE_URL = "https://api.openai.com";
 const DAGOUI_BASE_URL = "https://dagouai.cc.cd";
 const GEMINI_BASE_URL = "https://generativelanguage.googleapis.com";
-export const LOCAL_PROXY_PACKAGE = "@basketikun/canvas-proxy";
+export const LOCAL_PROXY_PACKAGE = "@esncy/canvas-proxy";
 export const DEFAULT_LOCAL_PROXY_URL = "http://127.0.0.1:23210";
 const DEFAULT_CHANNEL_MODELS: ChannelModel[] = [
     { name: "gpt-image-2", capability: "image" },
